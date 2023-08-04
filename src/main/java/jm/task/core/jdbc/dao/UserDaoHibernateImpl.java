@@ -4,6 +4,7 @@ import jm.task.core.jdbc.model.User;
 import jm.task.core.jdbc.util.Util;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+
 import java.util.List;
 
 
@@ -12,12 +13,11 @@ public class UserDaoHibernateImpl implements UserDao {
 
     }
 
-
     @Override
     public void createUsersTable() {
         try (Session session = Util.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
-            session.createSQLQuery("CREATE TABLE users (id BIGINT PRIMARY KEY AUTO_INCREMENT, " +
+            session.createSQLQuery("CREATE TABLE IF NOT EXISTS users (id BIGINT PRIMARY KEY AUTO_INCREMENT, " +
                     "name VARCHAR(255), lastName VARCHAR(255), age TINYINT)").executeUpdate();
             transaction.commit();
         } catch (Exception e) {
@@ -29,7 +29,7 @@ public class UserDaoHibernateImpl implements UserDao {
     public void dropUsersTable() {
         try (Session session = Util.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
-            session.createSQLQuery("DROP TABLE users").executeUpdate();
+            session.createSQLQuery("DROP TABLE IF EXISTS users").executeUpdate();
             transaction.commit();
         } catch (Exception e) {
             System.out.println("NOT DROP USERS TABLE");
@@ -40,9 +40,9 @@ public class UserDaoHibernateImpl implements UserDao {
     public void saveUser(String name, String lastName, byte age) {
         try (Session session = Util.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
-            session.createSQLQuery("INSERT users(name, lastName, age) VALUE(\""
-                    + name + "\", \"" + lastName + "\", " + age + ")").executeUpdate();
+            session.save(new User(name, lastName, age));
             transaction.commit();
+            System.out.println("User с именем – " + name + " добавлен в базу данных");
         } catch (IllegalStateException e) {
             System.out.println("NOT SAVE USER");
         }
@@ -52,7 +52,7 @@ public class UserDaoHibernateImpl implements UserDao {
     public void removeUserById(long id) {
         try (Session session = Util.getSessionFactory().openSession()) {
             Transaction transaction = session.beginTransaction();
-            session.createSQLQuery("DELETE FROM users WHERE id = " + id).executeUpdate();
+            session.delete(session.load(User.class, id));
             transaction.commit();
         } catch (Exception e) {
             System.out.println("NOT REMOVE USER BY ID = " + id);
